@@ -6,68 +6,122 @@ use Firebase\JWT\Key;
 
 class Auth extends RestController
 {
-
+    
     public function __construct()
     {
         parent::__construct();
         date_default_timezone_set('Asia/Jakarta');
+        $this->load->model('Model_anggota');
+        $this->load->model('Model_user');
     }
 
-    public function configToken()
+    public function login_post()
     {
-        $cnf['exp'] = time() + 60; //milisecond
-        $cnf['secretkey'] = '2212336221';
-        return $cnf;
-    }
+        $username = $this->post('username');
+        $password = $this->post('password');
 
-    public function authtoken()
-    {
-        $secret_key = $this->configToken()['secretkey'];
-        $token = null;
-        $authHeader = $this->input->request_headers()['Authorization'];
-        $arr = explode(" ", $authHeader);
-        $token = $arr[1];
-        // echo json_encode(JWT::decode($token, new Key($this->configToken()['secretkey'], 'HS256')));die;
-        if ($token) {
-            try {
-                $decoded = JWT::decode($token, new Key($this->configToken()['secretkey'], 'HS256'));
-                if ($decoded) {
-                    return 'benar';
-                }
-            } catch (\Exception $e) {
-                $result = array('pesan' => 'Kode Signature Tidak Sesuai');
-                return 'salah';
+        $checkUser = $this->Model_user->getByUsername($username);
+        
+        if($checkUser) {
+            $checkPassword = password_verify($password, $checkUser[0]->password);
 
+            if($checkPassword) {
+                $checkAnggota = $this->Model_anggota->getByNPM($username);
+
+                $data = [
+                    "npm" => $username,
+                    "nama" => $checkAnggota[0]->nama,
+                    "role" => $checkUser[0]->role,
+                    "divisi" => $checkAnggota[0]->divisi,
+                    "lab" => $checkAnggota[0]->lab,
+                    "foto" => $checkAnggota[0]->foto
+                ];
+                $this->response($this->api->getToken($data),200);
+            } else {
+                $this->response([
+                    "status" => 404,
+                    "message" => "Username or Password Wrong !!"
+                ]);
             }
-            die;
         }
     }
 
-    public function getToken_post()
+    public function register_post()
     {
-        $exp = $this->configToken()['exp'];
+        $foto = "";
+        if(isset($_FILES['foto'])){
+            $foto = $_FILES['foto'];
+        }
 
-        $token = array(
-            "iss" => 'apprestservice',
-            "aud" => 'pengguna',
-            "iat" => time(),
-            "nbf" => time() + 10,
-            "exp" => $exp,
-            "data" => array(
-                "username" => $this->post('username'),
-                "password" => $this->post('password'),
-            ),
-        );
+        if($foto != ''):
+            $config['upload_path']          = './assets/uploads/';
+            $config['allowed_types']        = 'jpg|png';
+            $config['max_size']             = 2048;
 
-        $jwt = JWT::encode($token, $this->configToken()['secretkey'], 'HS256');
-        $output = [
-            'status' => 200,
-            'message' => 'Berhasil login',
-            "token" => $jwt,
-            "expireAt" => date("Y-m-d H:i:s", $token['exp']),
+            $this->load->library('upload', $config);
+
+            if (!$this->upload->do_upload('foto')){
+                $data['error'] = $this->upload->display_errors();
+                $this->response($data, 500);
+            } else {
+                $uploaded_data = $this->upload->data();
+            $data = [
+                "npm" => $this->post('npm'),
+                "nama" => $this->post('nama'),
+                "divisi" => $this->post('divisi'),
+                "lab" => $this->post('lab'),
+                "foto" => $uploaded_data['file_name'],
+                "created_at" => date("Y-m-d"),
+                "last_update" => date("Y-m-d")
+            ];
+
+            $insert = $this->Model_anggota->insert($data);
+            if(!$insert) {
+                $this->response([
+                    "status" => false,
+                    "message" => "Failed insert data to anggota table !!"
+                ], 500);
+                die;
+            }
+        }
+        else:
+            $data = [
+                "npm" => $this->post('npm'),
+                "nama" => $this->post('nama'),
+                "divisi" => $this->post('divisi'),
+                "lab" => $this->post('lab'),
+                "created_at" => date("Y-m-d"),
+                "last_update" => date("Y-m-d")
+            ];
+
+            $insert = $this->Model_anggota->insert($data);
+            if(!$insert) {
+                $this->response([
+                    "status" => false,
+                    "message" => "Failed insert data to anggota table !!"
+                ], 500);
+                die;
+            }
+        endif;
+
+        $data = [
+            "username" => $this->post('npm'),
+            "password" => password_hash($this->post('password'), PASSWORD_DEFAULT),
+            "role" => $this->post('role'),
+            "created_at" => date("Y-m-d"),
+            "last_update" => date("Y-m-d")
         ];
-        $data = $output;
-        $this->response($data, 200);
+
+        $insert = $this->Model_user->insert($data);
+        if(!$insert) {
+            $this->response([
+                "status" => false,
+                "message" => "Failed insert data to user table !!"
+            ], 500);
+            die;
+        }
+
+        $this->response("Data successfully insert!!", 200);
     }
     
 }
