@@ -4,27 +4,23 @@ class Model_user extends CI_Model {
 
     public function getByUsername($username)
     {
-        $result = $this->db->get_where('user', ["username" => $username])->result();
-        return $result;
+        return $this->db->get_where('user', ["username" => $username])->result();
     }
 
     public function insert($data)
     {
-        $insert = $this->db->insert('user', $data);
-        return $insert;
+        return $this->db->insert('user', $data);
     }
 
     public function update($npm, $data)
     {
         $this->db->where('username', $npm);
-        $update = $this->db->update('user', $data);
-        return $update;
+        return $this->db->update('user', $data);
     }
 
     public function delete($npm)
     {
         $this->db->where('username', $npm);
-        $delete = $this->db->delete('user');
-        return $delete;
+        return $this->db->delete('user');
     }
 }

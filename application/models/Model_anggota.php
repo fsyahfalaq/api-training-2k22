@@ -1,36 +1,31 @@
 <?php
 
-class Model_anggota extends CI_Model {
-
+class Model_anggota extends CI_Model
+{
     public function getAll()
     {
-        $result = $this->db->get('anggota')->result();
-        return $result;
+        return $this->db->get('anggota')->result();
     }
 
     public function getByNPM($npm)
     {
-        $result = $this->db->get_where('anggota', ["npm" => $npm])->result();
-        return $result;
+        return $this->db->get_where('anggota', ["npm" => $npm])->result();
     }
 
     public function update($npm, $data)
     {
         $this->db->where('npm', $npm);
-        $update = $this->db->update('anggota', $data);
-        return $update;
+        return $this->db->update('anggota', $data);
     }
 
     public function insert($data)
     {
-        $insert = $this->db->insert('anggota', $data);
-        return $insert;
+        return $this->db->insert('anggota', $data);
     }
 
     public function delete($npm)
     {
-        $this->db->where('npm' , $npm);
-        $delete = $this->db->delete('anggota');
-        return $delete;
+        $this->db->where('npm', $npm);
+        return $this->db->delete('anggota');
     }
 }

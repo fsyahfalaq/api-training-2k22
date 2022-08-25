@@ -3,7 +3,8 @@
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-class Api {
+class Api
+{
 
     public function configToken()
     {
@@ -16,21 +17,21 @@ class Api {
     {
         $secret_key = $this->configToken()['secretkey'];
         $token = null;
+
+        // split string beaerer from token
         $authHeader = explode(" ", $reqToken);
         $token = $authHeader[1];
-        // echo json_encode(JWT::decode($token, new Key($this->configToken()['secretkey'], 'HS256')));die;
+
+        // verify token
         if ($token) {
             try {
-                $decoded = JWT::decode($token, new Key($this->configToken()['secretkey'], 'HS256'));
+                $decoded = JWT::decode($token, new Key($secret_key, 'HS256'));
                 if ($decoded) {
                     return true;
                 }
             } catch (\Exception $e) {
-                $result = array('pesan' => 'Kode Signature Tidak Sesuai');
                 return false;
-                die;
             }
-            // die;
         }
     }
 
@@ -44,14 +45,12 @@ class Api {
         );
 
         $jwt = JWT::encode($token, $this->configToken()['secretkey'], 'HS256');
-        $output = [
+        return [
             'status' => 200,
             'message' => 'Berhasil login',
             "token" => $jwt,
             "expireAt" => date("Y-m-d H:i:s", $token['exp']),
             "data" => $data
         ];
-
-        return $output;
     }
 }
